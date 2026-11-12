@@ -15,6 +15,13 @@
   nav { display:flex; flex-wrap:wrap; gap:8px; padding:0 16px 12px; }
   nav a { color:var(--text); text-decoration:none; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:8px 14px; font-size:14px; }
   nav a:hover { border-color:#5b9dff; }
+  #tide { margin:0 16px 12px; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:8px 10px; }
+  #tide .th { display:flex; justify-content:space-between; gap:8px; font-size:13px; font-weight:600; }
+  #tide #tnow { color:#5b9dff; font-weight:400; }
+  #tide svg { display:block; width:100%; height:150px; margin-top:4px; }
+  #tide .tf { color:var(--muted); font-size:11px; }
+  #tide text { fill:var(--muted); font-size:11px; }
+  #tide text.hl { fill:var(--text); }
   .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; padding:0 16px 16px; }
   @media (max-width:600px) {
     .grid { grid-template-columns:repeat(2,1fr); gap:8px; }
@@ -48,8 +55,12 @@
 <nav>
   <a href="https://www.windguru.cz/51685" target="_blank" rel="noopener">Windguru Knysna</a>
   <a href="https://www.windy.com/-34.040/23.050?-34.040,23.050,10" target="_blank" rel="noopener">Windy Knysna</a>
-  <a href="https://www.tide-forecast.com/locations/Knysna/tides/latest" target="_blank" rel="noopener">Knysna tides</a>
 </nav>
+<section id="tide" hidden>
+  <div class="th"><span>Tide · Knysna Heads</span><span id="tnow"></span></div>
+  <svg id="tsvg" role="img" aria-label="Tide graph for Knysna Heads, next 24 to 48 hours"></svg>
+  <div class="tf">Model data from Open-Meteo, metres from mean sea level, SAST. The tide in the lagoon is later than the tide at the Heads.</div>
+</section>
 <main id="main"></main>
 <footer>Camera images belong to their operators. Not an official weather source. Get an official briefing before flight.</footer>
 
@@ -70,8 +81,12 @@ const CAMS = [
   { area:'Wilderness and George', name:'Wilderness, Map of Africa', type:'yt', id:'UgsuebB4Ias' },
   { area:'Wilderness and George', name:'George Airport', type:'windy', id:'1760443221' },
   { area:'Mossel Bay', name:'Harbour and Santos Beach', type:'windy', id:'1338449105' },
+  { area:'Mossel Bay', name:'Airfield FAMO, north', type:'img', src:'Aero Club', id:'https://mosselbayaero.com/airfieldcameras/north.jpg' },
+  { area:'Mossel Bay', name:'Airfield FAMO, south', type:'img', src:'Aero Club', id:'https://mosselbayaero.com/airfieldcameras/south.jpg' },
+  { area:'Mossel Bay', name:'Airfield FAMO, west', type:'img', src:'Aero Club', id:'https://mosselbayaero.com/airfieldcameras/west.jpg' },
+  { area:'Mossel Bay', name:'Airfield FAMO, west 2', type:'img', src:'Aero Club', id:'https://mosselbayaero.com/airfieldcameras/westh.jpg' },
 ];
-const SRC = { yt:'YouTube', ipcam:'ipcamlive', windy:'Windy', img:'Webcam Galore' };
+const SRC = { yt:'YouTube', ipcam:'ipcamlive', windy:'Windy' };
 const still = c => c.type === 'windy' || c.type === 'img';
 const fullImg = c => c.type === 'img' ? `${c.id}?${bust()}` : `https://imgproxy.windy.com/_/full/plain/current/${c.id}/original.jpg?${bust()}`;
 const bust = () => 't=' + Math.floor(Date.now() / 60000);
@@ -93,7 +108,7 @@ CAMS.forEach((c, i) => {
   b.className = 'cam';
   b.innerHTML = `<div class="pic"><img alt="" loading="lazy" data-i="${i}" src="${thumb(c)}">
     <span class="tag ${still(c) ? 'still' : ''}">${still(c) ? 'STILL' : 'LIVE'}</span></div>
-    <div class="name"><span>${c.name}</span><span class="src">${SRC[c.type]}</span></div>`;
+    <div class="name"><span>${c.name}</span><span class="src">${c.src || SRC[c.type]}</span></div>`;
   b.onclick = () => openCam(i);
   grid.append(b);
 });
@@ -123,6 +138,71 @@ document.getElementById('close').onclick = () => history.back();
 addEventListener('popstate', close);
 addEventListener('keydown', e => { if (e.key === 'Escape' && big.classList.contains('open')) history.back(); });
 if (location.hash === '#cam') history.replaceState(null, '', location.pathname);
+
+// Tide graph: hourly sea level at the Knysna Heads for today and tomorrow.
+let tideData;
+async function loadTide() {
+  try {
+    const r = await fetch('https://marine-api.open-meteo.com/v1/marine?latitude=-34.08&longitude=23.06&hourly=sea_level_height_msl&timezone=Africa%2FJohannesburg&forecast_days=3');
+    const j = await r.json();
+    tideData = { t0: Date.parse(j.hourly.time[0] + ':00+02:00'), v: j.hourly.sea_level_height_msl };
+    document.getElementById('tide').hidden = false;
+    drawTide();
+  } catch (e) { /* no tide data: the section stays hidden */ }
+}
+function drawTide() {
+  if (!tideData) return;
+  const svg = document.getElementById('tsvg'), { t0, v: all } = tideData;
+  const W = svg.clientWidth, H = 150, top = 30, bot = 36;
+  const nowAll = (Date.now() - t0) / 3600000;
+  // Wide screen: 48 hours from midnight. Phone: 24 hours from 2 hours before now.
+  const span = W < 600 ? 24 : 48;
+  const s = W < 600 ? Math.max(0, Math.min(all.length - span - 1, Math.floor(nowAll) - 2)) : 0;
+  const v = all.slice(s, s + span + 1), n = v.length;
+  const lo = Math.min(...v), hi = Math.max(...v);
+  const x = h => h / (n - 1) * W;
+  const y = m => top + (hi - m) / (hi - lo) * (H - top - bot);
+  const hhmm = h => { const m = Math.round((h + s) * 60) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+  // Smooth curve through the hourly points (Catmull-Rom).
+  const P = i => [x(i), y(v[Math.max(0, Math.min(n - 1, i))])];
+  let d = `M${P(0)}`;
+  for (let i = 0; i < n - 1; i++) {
+    const [p0, p1, p2, p3] = [P(i - 1), P(i), P(i + 1), P(i + 2)];
+    d += ` C${p1[0] + (p2[0] - P(i - 1 < 0 ? 0 : i - 1)[0]) / 6 * (i ? 1 : .5)},${p1[1] + (p2[1] - p0[1]) / 6} ${p2[0] - (p3[0] - p1[0]) / 6},${p2[1] - (p3[1] - p1[1]) / 6} ${p2[0]},${p2[1]}`;
+  }
+  let o = `<path d="${d} L${W},${H - 16} L0,${H - 16} Z" fill="#5b9dff" opacity=".18"/><path d="${d}" fill="none" stroke="#5b9dff" stroke-width="2"/>`;
+  // Time axis: a tick each 6 hours, a line at midnight.
+  for (let h = (6 - s % 6) % 6; h < n; h += 6) {
+    const mid = (h + s) % 24 === 0 && h > 0;
+    const a = h === 0 ? 'start' : h === n - 1 ? 'end' : 'middle';
+    o += `<text x="${x(h)}" y="${H - 3}" text-anchor="${a}">${mid ? (h + s === 24 ? 'Tomorrow' : '00:00') : hhmm(h)}</text>`;
+    if (mid) o += `<line x1="${x(h)}" x2="${x(h)}" y1="${top - 14}" y2="${H - 16}" stroke="#2a313c"/>`;
+  }
+  // High water and low water: parabola fit around each turn.
+  for (let i = 1; i < n - 1; i++) {
+    const a = v[i - 1], b = v[i], c = v[i + 1];
+    const isHi = b > a && b >= c, isLo = b < a && b <= c;
+    if (!isHi && !isLo) continue;
+    const den = a - 2 * b + c, off = den ? 0.5 * (a - c) / den : 0;
+    const h = i + off, m = b - 0.25 * (a - c) * off;
+    const px = x(h), anchor = px < 45 ? 'start' : px > W - 45 ? 'end' : 'middle';
+    o += `<circle cx="${px}" cy="${y(m)}" r="3" fill="#5b9dff"/>`;
+    o += `<text class="hl" x="${px}" y="${isHi ? y(m) - 8 : y(m) + 15}" text-anchor="${anchor}">${hhmm(h)} ${m >= 0 ? '+' : ''}${m.toFixed(1)} m</text>`;
+  }
+  // Now marker.
+  const nowH = nowAll - s;
+  if (nowH >= 0 && nowH <= n - 1) {
+    const i = Math.floor(nowH), f = nowH - i, nx = v[Math.min(i + 1, n - 1)], cur = v[i] + (nx - v[i]) * f;
+    o += `<line x1="${x(nowH)}" x2="${x(nowH)}" y1="${top - 14}" y2="${H - 16}" stroke="#e5484d" stroke-width="1.5"/><circle cx="${x(nowH)}" cy="${y(cur)}" r="4" fill="#e5484d"/>`;
+    document.getElementById('tnow').textContent = `Now ${cur >= 0 ? '+' : ''}${cur.toFixed(1)} m, ${nx > v[i] ? 'rising' : 'falling'}`;
+  }
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = o;
+}
+loadTide();
+addEventListener('resize', drawTide);
+setInterval(drawTide, 300000);
+setInterval(loadTide, 6 * 3600000);
 
 // Refresh the thumbnails every 2 minutes.
 setInterval(() => document.querySelectorAll('.cam img').forEach(im => { im.src = thumb(CAMS[im.dataset.i]); }), 120000);
