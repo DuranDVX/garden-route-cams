@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Garden Route Webcams</title>
+<style>
+  :root { --bg:#0e1116; --card:#181d25; --text:#e8ecf1; --muted:#93a0b0; --line:#2a313c; --live:#e5484d; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  header { padding:16px; display:flex; flex-wrap:wrap; gap:4px 16px; align-items:baseline; }
+  h1 { font-size:20px; margin:0; }
+  header p { margin:0; color:var(--muted); font-size:13px; }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:8px 16px; }
+  nav { display:flex; flex-wrap:wrap; gap:8px; padding:0 16px 12px; }
+  nav a { color:var(--text); text-decoration:none; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:8px 14px; font-size:14px; }
+  nav a:hover { border-color:#5b9dff; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; padding:0 16px 16px; }
+  @media (max-width:600px) {
+    .grid { grid-template-columns:repeat(2,1fr); gap:8px; }
+    .cam .name { flex-direction:column; gap:0; padding:6px 8px; font-size:13px; }
+    .cam .tag { font-size:10px; left:6px; top:6px; }
+  }
+  .cam { background:var(--card); border:1px solid var(--line); border-radius:8px; overflow:hidden; cursor:pointer; padding:0; color:inherit; font:inherit; text-align:left; }
+  .cam:hover, .cam:focus-visible { border-color:#5b9dff; outline:none; }
+  .cam .pic { position:relative; aspect-ratio:16/9; background:#000; }
+  .cam img { width:100%; height:100%; object-fit:cover; display:block; }
+  .cam .tag { position:absolute; left:8px; top:8px; background:var(--live); color:#fff; font-size:11px; font-weight:600; padding:2px 6px; border-radius:4px; }
+  .cam .tag.still { background:#3a4350; }
+  .cam .name { padding:8px 10px; display:flex; justify-content:space-between; gap:8px; }
+  .cam .src { color:var(--muted); font-size:12px; white-space:nowrap; }
+  #big { position:fixed; inset:0; height:100dvh; background:#000; display:none; flex-direction:column; z-index:10; padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  #big.open { display:flex; }
+  #bar { display:flex; align-items:center; justify-content:space-between; padding:6px 8px 6px 14px; background:#000; color:#fff; }
+  #close { background:none; border:1px solid #555; color:#fff; width:40px; height:40px; border-radius:20px; font-size:20px; flex:none; line-height:1; cursor:pointer; }
+  #close:hover { background:#222; }
+  #stage { flex:1; min-height:0; display:flex; align-items:center; justify-content:center; }
+  #stage iframe { width:100%; height:100%; border:0; }
+  #stage img { max-width:100%; max-height:100%; object-fit:contain; }
+  footer { padding:8px 16px 24px; color:var(--muted); font-size:12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Garden Route Webcams</h1>
+  <p>Knysna · Plettenberg Bay · Sedgefield · Wilderness · George · Mossel Bay. Tap a camera to enlarge it.</p>
+</header>
+<nav>
+  <a href="https://www.windguru.cz/51685" target="_blank" rel="noopener">Windguru Knysna</a>
+  <a href="https://www.windy.com/-34.040/23.050?-34.040,23.050,10" target="_blank" rel="noopener">Windy Knysna</a>
+  <a href="https://www.tide-forecast.com/locations/Knysna/tides/latest" target="_blank" rel="noopener">Knysna tides</a>
+</nav>
+<main id="main"></main>
+<footer>Camera images belong to their operators. Not an official weather source. Get an official briefing before flight.</footer>
+
+<div id="big" role="dialog" aria-modal="true">
+  <div id="bar"><span id="title"></span><button id="close" aria-label="Close">×</button></div>
+  <div id="stage"></div>
+</div>
+
+<script>
+// type: yt (YouTube live), ipcam (ipcamlive.com), windy (still image, refreshed)
+const CAMS = [
+  { area:'Knysna', name:'The Heads', type:'yt', id:'ljRIiZitl3s' },
+  { area:'Knysna', name:'Yacht Club', type:'yt', id:'SPj9QbsACo4' },
+  { area:'Knysna', name:'Pezula (lagoon panorama)', type:'ipcam', id:'vnlknysna' },
+  { area:'Plettenberg Bay', name:'The Wedge to Beacon Isle', type:'yt', id:'sXWLXNSGX68' },
+  { area:'Plettenberg Bay', name:"Nature's Valley", type:'yt', id:'bVtf0Qcc_gY' },
+  { area:'Sedgefield', name:'Sedgefield (north-east view)', type:'windy', id:'1731225591' },
+  { area:'Wilderness and George', name:'Wilderness, Map of Africa', type:'yt', id:'UgsuebB4Ias' },
+  { area:'Wilderness and George', name:'George Airport', type:'windy', id:'1760443221' },
+  { area:'Mossel Bay', name:'Harbour and Santos Beach', type:'windy', id:'1338449105' },
+];
+const SRC = { yt:'YouTube', ipcam:'ipcamlive', windy:'Windy', img:'Webcam Galore' };
+const still = c => c.type === 'windy' || c.type === 'img';
+const fullImg = c => c.type === 'img' ? `${c.id}?${bust()}` : `https://imgproxy.windy.com/_/full/plain/current/${c.id}/original.jpg?${bust()}`;
+const bust = () => 't=' + Math.floor(Date.now() / 60000);
+const thumb = c =>
+  c.type === 'yt'    ? `https://i.ytimg.com/vi/${c.id}/hqdefault_live.jpg?${bust()}` :
+  c.type === 'ipcam' ? `https://g2.ipcamlive.com/player/snapshot.php?alias=${c.id}&${bust()}` :
+  c.type === 'img'   ? `${c.id}?${bust()}` :
+                       `https://imgproxy.windy.com/_/normal/plain/current/${c.id}/original.jpg?${bust()}`;
+
+const main = document.getElementById('main');
+let grid, area;
+CAMS.forEach((c, i) => {
+  if (c.area !== area) {
+    area = c.area;
+    main.insertAdjacentHTML('beforeend', `<h2>${area}</h2>`);
+    grid = document.createElement('div'); grid.className = 'grid'; main.append(grid);
+  }
+  const b = document.createElement('button');
+  b.className = 'cam';
+  b.innerHTML = `<div class="pic"><img alt="" loading="lazy" data-i="${i}" src="${thumb(c)}">
+    <span class="tag ${still(c) ? 'still' : ''}">${still(c) ? 'STILL' : 'LIVE'}</span></div>
+    <div class="name"><span>${c.name}</span><span class="src">${SRC[c.type]}</span></div>`;
+  b.onclick = () => openCam(i);
+  grid.append(b);
+});
+
+const big = document.getElementById('big'), stage = document.getElementById('stage');
+let timer;
+function openCam(i) {
+  const c = CAMS[i];
+  document.getElementById('title').textContent = `${c.area} · ${c.name}`;
+  if (c.type === 'yt')
+    stage.innerHTML = `<iframe allow="autoplay; fullscreen; encrypted-media" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" src="https://www.youtube.com/embed/${c.id}?autoplay=1&mute=1&playsinline=1"></iframe>`;
+  else if (c.type === 'ipcam')
+    stage.innerHTML = `<iframe allow="autoplay; fullscreen" allowfullscreen src="https://g2.ipcamlive.com/player/player.php?alias=${c.id}&autoplay=1"></iframe>`;
+  else {
+    stage.innerHTML = `<img alt="${c.name}" src="${fullImg(c)}">`;
+    timer = setInterval(() => { stage.firstChild.src = fullImg(c); }, 60000);
+  }
+  big.classList.add('open');
+  if (location.hash !== '#cam') history.pushState(null, '', '#cam');
+}
+function close() {
+  clearInterval(timer);
+  stage.innerHTML = '';
+  big.classList.remove('open');
+}
+document.getElementById('close').onclick = () => history.back();
+addEventListener('popstate', close);
+addEventListener('keydown', e => { if (e.key === 'Escape' && big.classList.contains('open')) history.back(); });
+if (location.hash === '#cam') history.replaceState(null, '', location.pathname);
+
+// Refresh the thumbnails every 2 minutes.
+setInterval(() => document.querySelectorAll('.cam img').forEach(im => { im.src = thumb(CAMS[im.dataset.i]); }), 120000);
+</script>
+</body>
+</html>
