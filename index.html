@@ -31,6 +31,7 @@
   .cam { background:var(--card); border:1px solid var(--line); border-radius:8px; overflow:hidden; cursor:pointer; padding:0; color:inherit; font:inherit; text-align:left; }
   .cam:hover, .cam:focus-visible { border-color:#5b9dff; outline:none; }
   .cam .pic { position:relative; aspect-ratio:16/9; background:#000; }
+  .cam .pic.ext { display:flex; align-items:center; justify-content:center; background:#10141a; color:var(--muted); font-size:13px; text-align:center; padding:8px; }
   .cam img { width:100%; height:100%; object-fit:cover; display:block; }
   .cam .tag { position:absolute; left:8px; top:8px; background:var(--live); color:#fff; font-size:11px; font-weight:600; padding:2px 6px; border-radius:4px; }
   .cam .tag.still { background:#3a4350; }
@@ -77,6 +78,8 @@ const CAMS = [
   { area:'Knysna', name:'Pezula (lagoon panorama)', type:'ipcam', id:'vnlknysna' },
   { area:'Plettenberg Bay', name:'The Wedge to Beacon Isle', type:'yt', id:'sXWLXNSGX68' },
   { area:'Plettenberg Bay', name:"Nature's Valley", type:'yt', id:'bVtf0Qcc_gY' },
+  { area:'Plettenberg Bay', name:'Robberg Beach', type:'link', src:'OceanEye, free login', id:'https://oceaneye.co.za/spots/robberg-beach/' },
+  { area:'Plettenberg Bay', name:'Plett surf camera', type:'link', src:'OceanEye, free login', id:'https://oceaneye.co.za/spots/plettenberg-bay/' },
   { area:'Sedgefield', name:'Sedgefield (north-east view)', type:'windy', id:'1731225591' },
   { area:'Wilderness and George', name:'Wilderness, Map of Africa', type:'yt', id:'UgsuebB4Ias' },
   { area:'Wilderness and George', name:'George Airport', type:'windy', id:'1760443221' },
@@ -86,6 +89,7 @@ const CAMS = [
   { area:'Mossel Bay', name:'Airfield FAMO, west', type:'img', src:'Aero Club', id:'https://mosselbayaero.com/airfieldcameras/west.jpg' },
   { area:'Mossel Bay', name:'Airfield FAMO, west 2', type:'img', src:'Aero Club', id:'https://mosselbayaero.com/airfieldcameras/westh.jpg' },
 ];
+// type link: the camera needs a login on the operator site, so the tile opens that site.
 const SRC = { yt:'YouTube', ipcam:'ipcamlive', windy:'Windy' };
 const still = c => c.type === 'windy' || c.type === 'img';
 const fullImg = c => c.type === 'img' ? `${c.id}?${bust()}` : `https://imgproxy.windy.com/_/full/plain/current/${c.id}/original.jpg?${bust()}`;
@@ -106,6 +110,13 @@ CAMS.forEach((c, i) => {
   }
   const b = document.createElement('button');
   b.className = 'cam';
+  if (c.type === 'link') {
+    b.innerHTML = `<div class="pic ext"><span>Opens on the OceanEye site ↗</span><span class="tag still">LINK</span></div>
+      <div class="name"><span>${c.name}</span><span class="src">${c.src}</span></div>`;
+    b.onclick = () => window.open(c.id, '_blank', 'noopener');
+    grid.append(b);
+    return;
+  }
   b.innerHTML = `<div class="pic"><img alt="" loading="lazy" data-i="${i}" src="${thumb(c)}">
     <span class="tag ${still(c) ? 'still' : ''}">${still(c) ? 'STILL' : 'LIVE'}</span></div>
     <div class="name"><span>${c.name}</span><span class="src">${c.src || SRC[c.type]}</span></div>`;
