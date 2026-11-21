@@ -6,59 +6,135 @@
 <title>Garden Route Webcams</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="theme-color" content="#0e1116">
+<meta name="theme-color" content="#060a0f">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#0e1116; --card:#181d25; --text:#e8ecf1; --muted:#93a0b0; --line:#2a313c; --live:#e5484d; }
-  * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif; }
-  header { padding:16px; display:flex; flex-wrap:wrap; gap:4px 16px; align-items:baseline; }
-  h1 { font-size:20px; margin:0; }
-  header p { margin:0; color:var(--muted); font-size:13px; }
-  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:8px 16px; }
-  nav { display:flex; flex-wrap:wrap; gap:8px; padding:0 16px 12px; }
-  nav a { color:var(--text); text-decoration:none; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:8px 14px; font-size:14px; }
-  nav a:hover { border-color:#5b9dff; }
-  #tide { margin:0 16px 12px; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:8px 10px; }
-  #tide .th { display:flex; justify-content:space-between; gap:8px; font-size:13px; font-weight:600; }
-  #tide #tnow { color:#5b9dff; font-weight:400; }
-  #tide svg { display:block; width:100%; height:150px; margin-top:4px; }
-  #tide .tf { color:var(--muted); font-size:11px; }
-  #tide text { fill:var(--muted); font-size:11px; }
-  #tide text.hl { fill:var(--text); }
-  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; padding:0 16px 16px; }
-  @media (max-width:600px) {
-    .grid { grid-template-columns:repeat(2,1fr); gap:8px; }
-    .cam .name { flex-direction:column; gap:0; padding:6px 8px; font-size:13px; }
-    .cam .tag { font-size:10px; left:6px; top:6px; }
+  :root {
+    --bg:#060a0f; --panel:#0b131b; --panel2:#0e1a24; --line:#163041;
+    --cyan:#2fe6d6; --cyan-dim:#1b8a86; --amber:#f5a623; --live:#ff3b47;
+    --text:#d4ecef; --muted:#5f8591; --mono:"Share Tech Mono",ui-monospace,monospace;
   }
-  .cam { background:var(--card); border:1px solid var(--line); border-radius:8px; overflow:hidden; cursor:pointer; padding:0; color:inherit; font:inherit; text-align:left; }
-  .cam:hover, .cam:focus-visible { border-color:#5b9dff; outline:none; }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--bg); color:var(--text);
+    font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;
+    background-image:
+      linear-gradient(rgba(47,230,214,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(47,230,214,.04) 1px, transparent 1px),
+      radial-gradient(1200px 600px at 50% -10%, rgba(47,230,214,.08), transparent 70%);
+    background-size:44px 44px, 44px 44px, 100% 100%;
+    min-height:100dvh;
+  }
+  header { padding:18px 16px 8px; position:relative; }
+  .brand { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  h1 {
+    font:700 21px/1 "Orbitron",sans-serif; margin:0; letter-spacing:.06em;
+    color:#eafffb; text-transform:uppercase;
+    text-shadow:0 0 12px rgba(47,230,214,.45);
+  }
+  .status {
+    font-family:var(--mono); font-size:11px; letter-spacing:.14em; color:var(--cyan);
+    border:1px solid var(--cyan-dim); border-radius:3px; padding:3px 8px;
+    display:inline-flex; align-items:center; gap:7px; text-transform:uppercase;
+    background:rgba(47,230,214,.06);
+  }
+  .status::before {
+    content:""; width:7px; height:7px; border-radius:50%; background:var(--cyan);
+    box-shadow:0 0 8px var(--cyan); animation:pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+  header p { margin:8px 0 0; color:var(--muted); font-family:var(--mono); font-size:12.5px; letter-spacing:.04em; }
+  h2 {
+    font-family:var(--mono); font-size:12px; text-transform:uppercase; letter-spacing:.22em;
+    color:var(--cyan); margin:20px 16px 10px; display:flex; align-items:center; gap:10px;
+  }
+  h2::before { content:"▚"; color:var(--cyan-dim); }
+  h2::after { content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--line),transparent); }
+  nav { display:flex; flex-wrap:wrap; gap:8px; padding:4px 16px 14px; }
+  nav a {
+    color:var(--cyan); text-decoration:none; background:rgba(47,230,214,.05);
+    border:1px solid var(--line); border-radius:3px; padding:8px 14px;
+    font-family:var(--mono); font-size:13px; letter-spacing:.06em; transition:.15s;
+  }
+  nav a:hover { border-color:var(--cyan); box-shadow:0 0 14px rgba(47,230,214,.25); background:rgba(47,230,214,.1); }
+  #tide {
+    margin:0 16px 14px; background:var(--panel); border:1px solid var(--line);
+    border-radius:4px; padding:10px 12px; position:relative;
+  }
+  #tide::before, #tide::after {
+    content:""; position:absolute; width:10px; height:10px; border:1px solid var(--cyan); opacity:.6;
+  }
+  #tide::before { top:-1px; left:-1px; border-right:0; border-bottom:0; }
+  #tide::after { bottom:-1px; right:-1px; border-left:0; border-top:0; }
+  #tide .th { display:flex; justify-content:space-between; gap:8px; font-family:var(--mono); font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--text); }
+  #tide #tnow { color:var(--amber); }
+  #tide svg { display:block; width:100%; height:150px; margin-top:4px; }
+  #tide .tf { color:var(--muted); font-size:11px; font-family:var(--mono); }
+  #tide text { fill:var(--muted); font-size:11px; font-family:var(--mono); }
+  #tide text.hl { fill:var(--text); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; padding:0 16px 16px; }
+  @media (max-width:600px) {
+    .grid { grid-template-columns:repeat(2,1fr); gap:10px; }
+    .cam .name { flex-direction:column; gap:0; padding:7px 9px; font-size:13px; }
+    .cam .tag { font-size:9px; left:6px; top:6px; }
+    h1 { font-size:18px; }
+  }
+  .cam {
+    position:relative; background:var(--panel); border:1px solid var(--line);
+    border-radius:4px; overflow:hidden; cursor:pointer; padding:0; color:inherit;
+    font:inherit; text-align:left; transition:.15s;
+  }
+  .cam::before, .cam::after {
+    content:""; position:absolute; width:12px; height:12px; z-index:2; pointer-events:none;
+    border:1.5px solid var(--cyan); opacity:0; transition:.15s;
+  }
+  .cam::before { top:5px; left:5px; border-right:0; border-bottom:0; }
+  .cam::after { bottom:5px; right:5px; border-left:0; border-top:0; }
+  .cam:hover, .cam:focus-visible {
+    border-color:var(--cyan); outline:none; box-shadow:0 0 18px rgba(47,230,214,.22);
+  }
+  .cam:hover::before, .cam:hover::after, .cam:focus-visible::before, .cam:focus-visible::after { opacity:.85; }
   .cam .pic { position:relative; aspect-ratio:16/9; background:#000; }
-  .cam .pic.ext { display:flex; align-items:center; justify-content:center; background:#10141a; color:var(--muted); font-size:13px; text-align:center; padding:8px; }
+  .cam .pic::after {
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(transparent 60%, rgba(6,10,15,.55));
+  }
+  .cam .pic.ext { display:flex; align-items:center; justify-content:center; background:#0a1017; color:var(--muted); font-family:var(--mono); font-size:12px; text-align:center; padding:8px; }
   .cam img { width:100%; height:100%; object-fit:cover; display:block; }
-  .cam .tag { position:absolute; left:8px; top:8px; background:var(--live); color:#fff; font-size:11px; font-weight:600; padding:2px 6px; border-radius:4px; }
-  .cam .tag.still { background:#3a4350; }
-  .cam .name { padding:8px 10px; display:flex; justify-content:space-between; gap:8px; }
-  .cam .src { color:var(--muted); font-size:12px; white-space:nowrap; }
+  .cam .tag {
+    position:absolute; left:8px; top:8px; z-index:1; font-family:var(--mono);
+    font-size:10px; letter-spacing:.12em; font-weight:400; padding:3px 7px; border-radius:2px;
+    color:#0a0a0a; background:var(--live); display:inline-flex; align-items:center; gap:5px;
+  }
+  .cam .tag::before { content:""; width:5px; height:5px; border-radius:50%; background:#0a0a0a; }
+  .cam .tag.still { background:var(--amber); }
+  .cam .name { padding:9px 11px; display:flex; justify-content:space-between; gap:8px; align-items:baseline; border-top:1px solid var(--line); }
+  .cam .src { color:var(--cyan-dim); font-family:var(--mono); font-size:11px; letter-spacing:.05em; white-space:nowrap; }
   #big { position:fixed; inset:0; height:100dvh; background:#000; display:none; flex-direction:column; z-index:10; padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
   #big.open { display:flex; }
-  #bar { display:flex; align-items:center; justify-content:space-between; padding:6px 8px 6px 14px; background:#000; color:#fff; }
-  #close { background:none; border:1px solid #555; color:#fff; width:40px; height:40px; border-radius:20px; font-size:20px; flex:none; line-height:1; cursor:pointer; }
-  #close:hover { background:#222; }
+  #bar { display:flex; align-items:center; justify-content:space-between; padding:8px 10px 8px 14px; background:#05080c; color:var(--text); border-bottom:1px solid var(--line); }
+  #title { font-family:var(--mono); font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--cyan); }
+  #close { background:rgba(47,230,214,.06); border:1px solid var(--cyan-dim); color:var(--cyan); width:40px; height:40px; border-radius:3px; font-size:20px; flex:none; line-height:1; cursor:pointer; transition:.15s; }
+  #close:hover { background:rgba(47,230,214,.16); border-color:var(--cyan); }
   #stage { flex:1; min-height:0; display:flex; align-items:center; justify-content:center; }
   #stage iframe { width:100%; height:100%; border:0; }
   #stage img { max-width:100%; max-height:100%; object-fit:contain; }
-  footer { padding:8px 16px 24px; color:var(--muted); font-size:12px; }
+  footer { padding:10px 16px 28px; color:var(--muted); font-family:var(--mono); font-size:11px; letter-spacing:.03em; }
 </style>
 </head>
 <body>
 <header>
-  <h1>Garden Route Webcams</h1>
-  <p>Knysna · Plettenberg Bay · Sedgefield · Wilderness · George · Mossel Bay. Tap a camera to enlarge it.</p>
+  <div class="brand">
+    <h1>Garden Route Cams</h1>
+    <span class="status">Live feed</span>
+  </div>
+  <p>KNYSNA · PLETTENBERG BAY · SEDGEFIELD · WILDERNESS · GEORGE · MOSSEL BAY — tap a camera to enlarge.</p>
 </header>
 <nav>
-  <a href="https://www.windguru.cz/51685" target="_blank" rel="noopener">Windguru Knysna</a>
-  <a href="https://www.windy.com/-34.040/23.050?-34.040,23.050,10" target="_blank" rel="noopener">Windy Knysna</a>
+  <a href="https://www.windguru.cz/51685" target="_blank" rel="noopener">◈ Windguru Knysna</a>
+  <a href="https://www.windy.com/-34.040/23.050?-34.040,23.050,10" target="_blank" rel="noopener">◈ Windy Knysna</a>
 </nav>
 <section id="tide" hidden>
   <div class="th"><span>Tide · Knysna Heads</span><span id="tnow"></span></div>
@@ -74,7 +150,7 @@
 </div>
 
 <script>
-// type: yt (YouTube live), ipcam (ipcamlive.com), windy (still image, refreshed)
+// type: yt (YouTube live), ipcam (ipcamlive.com), windy (still image, refreshed), img (still image)
 const CAMS = [
   { area:'Knysna', name:'The Heads', type:'yt', id:'ljRIiZitl3s' },
   { area:'Knysna', name:'Yacht Club', type:'yt', id:'SPj9QbsACo4' },
@@ -152,6 +228,7 @@ addEventListener('keydown', e => { if (e.key === 'Escape' && big.classList.conta
 if (location.hash === '#cam') history.replaceState(null, '', location.pathname);
 
 // Tide graph: hourly sea level at the Knysna Heads for today and tomorrow.
+const T_CURVE = '#2fe6d6', T_GRID = '#163041', T_NOW = '#f5a623';
 let tideData;
 async function loadTide() {
   try {
@@ -182,13 +259,13 @@ function drawTide() {
     const [p0, p1, p2, p3] = [P(i - 1), P(i), P(i + 1), P(i + 2)];
     d += ` C${p1[0] + (p2[0] - P(i - 1 < 0 ? 0 : i - 1)[0]) / 6 * (i ? 1 : .5)},${p1[1] + (p2[1] - p0[1]) / 6} ${p2[0] - (p3[0] - p1[0]) / 6},${p2[1] - (p3[1] - p1[1]) / 6} ${p2[0]},${p2[1]}`;
   }
-  let o = `<path d="${d} L${W},${H - 16} L0,${H - 16} Z" fill="#5b9dff" opacity=".18"/><path d="${d}" fill="none" stroke="#5b9dff" stroke-width="2"/>`;
+  let o = `<path d="${d} L${W},${H - 16} L0,${H - 16} Z" fill="${T_CURVE}" opacity=".12"/><path d="${d}" fill="none" stroke="${T_CURVE}" stroke-width="2" style="filter:drop-shadow(0 0 4px ${T_CURVE})"/>`;
   // Time axis: a tick each 6 hours, a line at midnight.
   for (let h = (6 - s % 6) % 6; h < n; h += 6) {
     const mid = (h + s) % 24 === 0 && h > 0;
     const a = h === 0 ? 'start' : h === n - 1 ? 'end' : 'middle';
     o += `<text x="${x(h)}" y="${H - 3}" text-anchor="${a}">${mid ? (h + s === 24 ? 'Tomorrow' : '00:00') : hhmm(h)}</text>`;
-    if (mid) o += `<line x1="${x(h)}" x2="${x(h)}" y1="${top - 14}" y2="${H - 16}" stroke="#2a313c"/>`;
+    if (mid) o += `<line x1="${x(h)}" x2="${x(h)}" y1="${top - 14}" y2="${H - 16}" stroke="${T_GRID}"/>`;
   }
   // High water and low water: parabola fit around each turn.
   for (let i = 1; i < n - 1; i++) {
@@ -198,14 +275,14 @@ function drawTide() {
     const den = a - 2 * b + c, off = den ? 0.5 * (a - c) / den : 0;
     const h = i + off, m = b - 0.25 * (a - c) * off;
     const px = x(h), anchor = px < 45 ? 'start' : px > W - 45 ? 'end' : 'middle';
-    o += `<circle cx="${px}" cy="${y(m)}" r="3" fill="#5b9dff"/>`;
+    o += `<circle cx="${px}" cy="${y(m)}" r="3" fill="${T_CURVE}"/>`;
     o += `<text class="hl" x="${px}" y="${isHi ? y(m) - 8 : y(m) + 15}" text-anchor="${anchor}">${hhmm(h)} ${m >= 0 ? '+' : ''}${m.toFixed(1)} m</text>`;
   }
   // Now marker.
   const nowH = nowAll - s;
   if (nowH >= 0 && nowH <= n - 1) {
     const i = Math.floor(nowH), f = nowH - i, nx = v[Math.min(i + 1, n - 1)], cur = v[i] + (nx - v[i]) * f;
-    o += `<line x1="${x(nowH)}" x2="${x(nowH)}" y1="${top - 14}" y2="${H - 16}" stroke="#e5484d" stroke-width="1.5"/><circle cx="${x(nowH)}" cy="${y(cur)}" r="4" fill="#e5484d"/>`;
+    o += `<line x1="${x(nowH)}" x2="${x(nowH)}" y1="${top - 14}" y2="${H - 16}" stroke="${T_NOW}" stroke-width="1.5"/><circle cx="${x(nowH)}" cy="${y(cur)}" r="4" fill="${T_NOW}"/>`;
     document.getElementById('tnow').textContent = `Now ${cur >= 0 ? '+' : ''}${cur.toFixed(1)} m, ${nx > v[i] ? 'rising' : 'falling'}`;
   }
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
